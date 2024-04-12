@@ -1,0 +1,12 @@
+data/
+.DS_Store
+tmp
+build/
+dist/
+.idea/
+.ipynb_checkpoints/
+venv/
+*.swp
+*.py[co]
+__pycache__
+

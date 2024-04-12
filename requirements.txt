@@ -1,0 +1,6 @@
+duckdb==0.10.1
+pandas==2.2.1
+jupyter==1.0.0
+scikit-learn==1.4.2
+sentence-transformers==2.6.1
+chromadb==0.4.24
