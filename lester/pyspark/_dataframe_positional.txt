@@ -1,0 +1,106 @@
+from pyspark.sql import Row
+from pyspark.sql.functions import monotonically_increasing_id
+
+
+def append_provenance(row, prov_row):
+    merged_dict = row.asDict()
+    merged_dict.update(prov_row.asDict())
+    return Row(**merged_dict)
+
+
+class TrackedDataframe:
+
+    def __init__(self, df, source_id=None, provenance=None):
+        if provenance is not None:
+            self.df = df
+            self.provenance = provenance
+        else:
+            if source_id is None:
+                raise Exception("Need source_id or provenance here!")
+            else:
+                prov_column = f'__lester_provenance__{source_id}'
+                df_with_provenance = \
+                    df.withColumn(prov_column, monotonically_increasing_id())
+                self.df = df_with_provenance.select(df.columns)
+                self.provenance = df_with_provenance.select(prov_column)
+
+    def _with_provenance(self):
+        intermediate = self.df.rdd \
+            .zip(self.provenance.rdd) \
+            .map(lambda rows: append_provenance(rows[0], rows[1]))
+        return intermediate.toDF()
+
+    def filter(self, expression):
+        intermediate_df = self._with_provenance().filter(expression)
+        filtered_df = intermediate_df.select(self.df.columns)
+        filtered_provenance = intermediate_df.select(self.provenance.columns)
+        return TrackedDataframe(filtered_df, provenance=filtered_provenance)
+
+    def dropna(self):
+        intermediate_df = self._with_provenance().dropna()
+        filtered_df = intermediate_df.select(self.df.columns)
+        filtered_provenance = intermediate_df.select(self.provenance.columns)
+        return TrackedDataframe(filtered_df, provenance=filtered_provenance)
+
+    def join(self, other, on):
+
+        if isinstance(other, TrackedDataframe):
+            prov_columns = self.provenance.columns + other.provenance.columns
+
+            intermediate_df = self._with_provenance().join(other._with_provenance(), on=on)
+
+            joined_columns = [column for column in intermediate_df.columns
+                              if column not in prov_columns]
+
+            joined_df = intermediate_df.select(joined_columns)
+            joined_provenance = intermediate_df.select(prov_columns)
+            return TrackedDataframe(joined_df, provenance=joined_provenance)
+        else:
+            intermediate_df = self._with_provenance().join(other.df, on=on)
+
+            joined_columns = [column for column in intermediate_df.columns
+                              if column not in self.provenance.columns]
+
+            joined_df = intermediate_df.select(joined_columns)
+            joined_provenance = intermediate_df.select(self.provenance.columns)
+            return TrackedDataframe(joined_df, provenance=joined_provenance)
+
+    def select(self, expression):
+        projected_df = self.df.select(expression)
+        return TrackedDataframe(projected_df, provenance=self.provenance)
+
+    def withColumn(self, new_column, expression):
+        projected_df = self.df.withColumn(new_column, expression)
+        return TrackedDataframe(projected_df, provenance=self.provenance)
+
+    def __getattr__(self, name):
+        return self.df.__getattr__(name)
+
+
+class WrappedDataframe:
+
+    def __init__(self, df):
+        self.df = df
+
+    def filter(self, expression):
+        filtered_df = self.df.filter(expression)
+        return WrappedDataframe(filtered_df)
+
+    def join(self, other, on):
+        if isinstance(other, WrappedDataframe):
+            joined_df = self.df.join(other.df, on=on)
+            return WrappedDataframe(joined_df)
+        else:
+            raise "Not Implemented"
+
+
+    def select(self, expression):
+        projected_df = self.df.select(expression)
+        return WrappedDataframe(projected_df)
+
+    def withColumn(self, new_column, expression):
+        projected_df = self.df.withColumn(new_column, expression)
+        return WrappedDataframe(projected_df)
+
+    def __getattr__(self, name):
+        return self.df.__getattr__(name)

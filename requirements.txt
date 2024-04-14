@@ -4,3 +4,4 @@ jupyter==1.0.0
 scikit-learn==1.4.2
 sentence-transformers==2.6.1
 chromadb==0.4.24
+pyspark==3.5.1

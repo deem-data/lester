@@ -20,7 +20,7 @@ class WrappedDataframe:
 
     def merge(self, other, on):
         if isinstance(other, TrackedDataframe):
-            raise("NA")
+            raise "Not implemented, was too lazy..."
         else:
             self_df = self.df
             other_df = other.df
