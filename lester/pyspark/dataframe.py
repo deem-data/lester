@@ -1,33 +1,27 @@
-from pyspark.sql.functions import monotonically_increasing_id
+class PysparkDuckframe:
 
+    def __init__(self, duckframe):
+        self.duckframe = duckframe
 
-class TrackedDataframe:
-
-    def __init__(self, df, source_id=None):
-        if source_id is None:
-            self.df = df
-        else:
-            prov_column = f'__lester_provenance__{source_id}'
-            self.df = df.withColumn(prov_column, monotonically_increasing_id())
-
-    def filter(self, expression):
-        return TrackedDataframe(self.df.filter(expression))
+    def filter(self, predicate):
+        result_duckframe = self.duckframe.select(predicate)
+        return PysparkDuckframe(result_duckframe)
 
     def dropna(self):
-        return TrackedDataframe(self.df.dropna())
+        result_duckframe = self.duckframe.dropna()
+        return PysparkDuckframe(result_duckframe)
 
     def join(self, other, on):
-        # TODO we might get issues with self joins here
-        return TrackedDataframe(self.df.join(other.df, on=on))
+        result_duckframe = self.duckframe.join(other.duckframe, on)
+        return PysparkDuckframe(result_duckframe)
 
-    def select(self, expression):
-        return TrackedDataframe(self.df.select(expression))
+    def select(self, columns):
+        result_duckframe = self.duckframe.project(columns)
+        return PysparkDuckframe(result_duckframe)
 
-    def withColumn(self, new_column, expression):
-        return TrackedDataframe(self.df.withColumn(new_column, expression))
+    def withColumn(self, new_column, column_expression):
+        sql_expression = column_expression._jc.toString()
+        result_duckframe = self.duckframe.extended_project(new_column, sql_expression)
+        return PysparkDuckframe(result_duckframe)
 
-    def randomSplit(self, weights, seed):
-        return [TrackedDataframe(split) for split in self.df.randomSplit(weights, seed)]
 
-    def __getattr__(self, name):
-        return self.df.__getattr__(name)

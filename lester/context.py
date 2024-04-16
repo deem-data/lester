@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 class LesterContext:
@@ -22,7 +22,7 @@ class LesterContext:
 @dataclass
 class datasource:
     name: str
-    track_provenance: bool = False
+    track_provenance_by: list[str] = field(default_factory=list)
 
 
 def prepare(*args, **kwargs):

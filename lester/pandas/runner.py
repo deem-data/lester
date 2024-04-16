@@ -1,5 +1,6 @@
 from lester.context import LesterContext
-from lester.pandas.dataframe import WrappedDataframe, TrackedDataframe
+from lester.duckframe import from_tracked_source, from_source
+from lester.pandas.dataframe import PandasDuckframe
 import duckdb
 import sys
 
@@ -12,23 +13,24 @@ def __load_lester_datasource(source):
 
     ctx = LesterContext()
 
-    name_to_query = {
-        'ratings': "SELECT * FROM 'data/ratings.csv'",
-        'books': "SELECT * FROM 'data/books.csv'",
-        'categories': "SELECT * FROM 'data/categories.csv'",
-        'book_tags': "SELECT * FROM 'data/book_tags.csv'",
-        'tags': "SELECT * FROM 'data/tags.csv'",
+    name_to_path = {
+        'ratings': 'data/ratings.csv',
+        'books': 'data/books.csv',
+        'categories': 'data/categories.csv',
+        'book_tags': 'data/book_tags.csv',
+        'tags': 'data/tags.csv',
     }
 
-    query = name_to_query[source.name]
-    df = duckdb.query(query).to_df()
+    path = name_to_path[source.name]
 
-    if not source.track_provenance:
-        return WrappedDataframe(df)
-    else:
+    if len(source.track_provenance_by) > 0:
         source_id = ctx.source_counter
         ctx.source_counter += 1
-        return TrackedDataframe(df, source_id=source_id)
+        duckframe = from_tracked_source(source.name, path, source.track_provenance_by, source_id)
+    else:
+        duckframe = from_source(source.name, path)
+
+    return PandasDuckframe(duckframe)
 
 
 def run():
@@ -43,16 +45,8 @@ def run():
 
     eprint("Executing relational data preparation")
     prepared_data = ctx.prepare_function(**datasouce_args)
-
-    prepared_data_df = prepared_data.df
-    prepared_data_prov = prepared_data.provenance
-    prov_columns = ', '.join(list(prepared_data_prov.columns))
-
-    intermediate = duckdb.query(f"""
-        SELECT * 
-        FROM prepared_data_df 
-        POSITIONAL JOIN prepared_data_prov
-    """).to_df()
+    intermediate = prepared_data.duckframe.relation.to_df()
+    prov_columns = ', '.join(prepared_data.duckframe.provenance_columns)
 
     eprint("Splitting prepared data")
     intermediate_train, intermediate_test = ctx.split_function(intermediate, random_seed)
@@ -78,8 +72,8 @@ def run():
     model.fit(X_train, y_train)
 
     eprint("Encoding test data")
-    X_test = feature_transformer.fit_transform(train_df)
-    y_test = target_encoder.fit_transform(train_df[target_column])
+    X_test = feature_transformer.transform(test_df)
+    y_test = target_encoder.transform(test_df[target_column])
 
     eprint("Evaluating the model on test data")
     score = model.score(X_test, y_test)

@@ -13,21 +13,20 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 @prepare(
-    books=datasource('books', track_provenance=True),
-    categories=datasource('categories'),
+    books=datasource('books', track_provenance_by=['goodreads_book_id']),
+    categories=datasource('categories', track_provenance_by=['tag_id']),
     book_tags=datasource('book_tags'))
 def label_books(books, categories, book_tags):
 
-    english_books = books \
-        .dropna() \
+    english_books = books\
+        .dropna()\
         .query("language_code == 'eng'")
 
     popular_categories = categories.query("popularity >= 10")
     categories_with_books = popular_categories.merge(book_tags, on='tag_id')
 
-    filtered_books = english_books.merge(categories_with_books, on='goodreads_book_id')
-    labeled_books = filtered_books \
-        .assign(is_highly_rated=lambda row: row['average_rating'] > 4.2)
+    labeled_books = english_books.merge(categories_with_books, on='goodreads_book_id')
+    labeled_books['is_highly_rated'] = labeled_books.eval('average_rating > 4.2')
 
     return labeled_books
 
