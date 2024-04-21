@@ -13,19 +13,17 @@ def from_tracked_source(name, path, primary_key_columns, source_id):
             FROM '{path}'
         """)
 
-    column_name_result = duckdb.execute(f"""
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = '{name}_view'
-        """)\
+    column_name_result = duckdb \
+        .execute(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{name}_view'") \
         .fetchall()
 
     columns = [name[0] for name in column_name_result if name[0] != provenance_column]
+    column_provenance = {column: [f"{name}.{column}"] for column in columns}
 
     relation = duckdb.sql(f"SELECT * FROM {name}_view") \
         .set_alias(name)
 
-    return Duckframe(name, relation, columns, [provenance_column])
+    return Duckframe(name, relation, columns, column_provenance, [provenance_column])
 
 
 def from_source(name, path):
@@ -43,11 +41,12 @@ def from_source(name, path):
         .fetchall()
 
     columns = [name[0] for name in column_name_result]
+    column_provenance = {column: [f"{name}.{column}"] for column in columns}
 
     relation = duckdb.sql(f"SELECT * FROM {name}_view") \
         .set_alias(name)
 
-    return Duckframe(name, relation, columns)
+    return Duckframe(name, relation, columns, column_provenance)
 
 
 def empty_if_none(lst):
@@ -59,10 +58,11 @@ def empty_if_none(lst):
 
 class Duckframe:
 
-    def __init__(self, name, relation, columns, provenance_columns=None):
+    def __init__(self, name, relation, columns, column_provenance, provenance_columns=None):
         self.name = name
         self.relation = relation
         self.columns = columns
+        self.column_provenance = column_provenance
         self.provenance_columns = provenance_columns
         self.consumer_count = 0
 
@@ -74,14 +74,13 @@ class Duckframe:
             .filter(predicate) \
             .set_alias(result_name)
 
-        return Duckframe(result_name, result_relation, self.columns, self.provenance_columns)
+        return Duckframe(result_name, result_relation, self.columns, self.column_provenance, self.provenance_columns)
 
     def dropna(self):
         predicate = ' AND '.join([f'({column} IS NOT NULL)' for column in self.columns])
         return self.select(predicate)
 
     # TODO: this probably fails if we try overwrite an existing column
-    # TODO: we need a way to get the source columns from the expression
     def extended_project(self, new_column, column_expression):
         result_name = f'{self.name}__extended_project_{self.consumer_count}'
         self.consumer_count += 1
@@ -94,7 +93,14 @@ class Duckframe:
 
         result_columns = self.columns + [new_column]
 
-        return Duckframe(result_name, result_relation, result_columns, self.provenance_columns)
+        # TODO: we need a way to get the source columns from the expression
+        result_column_provenance = {
+            **self.column_provenance,
+            new_column: [provenance for provenance in self.column_provenance.values()]
+        }
+
+        return Duckframe(result_name, result_relation, result_columns, result_column_provenance,
+                         self.provenance_columns)
 
     def project(self, columns):
         result_name = f'{self.name}__project_{self.consumer_count}'
@@ -106,7 +112,10 @@ class Duckframe:
             .project(projection_expression) \
             .set_alias(result_name)
 
-        return Duckframe(result_name, result_relation, columns, self.provenance_columns)
+        result_column_provenance = {column: provenance for (column, provenance) in self.column_provenance
+                                    if column in columns}
+
+        return Duckframe(result_name, result_relation, columns, result_column_provenance, self.provenance_columns)
 
     def join(self, other, on):
         result_name = f'{self.name}__join_{other.name}_{self.consumer_count}'
@@ -121,5 +130,8 @@ class Duckframe:
         # TODO needs some special handling for self-joins and duplicate column names...
         result_columns = self.columns + other.columns
         result_provenance_columns = empty_if_none(self.provenance_columns) + empty_if_none(other.provenance_columns)
+        # TODO We need to read up on DuckDB's semantics when encountering duplicate column names
+        result_column_provenance = {**self.column_provenance, **other.column_provenance}
 
-        return Duckframe(result_name, result_relation, result_columns, result_provenance_columns)
+        return Duckframe(result_name, result_relation, result_columns, result_column_provenance,
+                         result_provenance_columns)

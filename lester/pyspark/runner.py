@@ -54,6 +54,8 @@ def run():
     prepared_data_as_pandas = prepared_data_as_duckframe.duckframe.relation.to_df()
     prepared_data = spark.createDataFrame(prepared_data_as_pandas)
 
+    print(prepared_data_as_duckframe.duckframe.column_provenance)
+
     eprint("Splitting prepared data")
     intermediate_train, intermediate_test = ctx.split_function(prepared_data, random_seed)
     # TODO remove the provenance columns here

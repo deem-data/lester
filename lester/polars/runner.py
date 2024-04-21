@@ -1,6 +1,6 @@
 from lester.context import LesterContext
 from lester.duckframe import from_tracked_source, from_source
-from lester.pandas.dataframe import PandasDuckframe
+from lester.polars.dataframe import PolarsDuckframe
 import duckdb
 import sys
 
@@ -30,7 +30,7 @@ def __load_lester_datasource(source):
     else:
         duckframe = from_source(source.name, path)
 
-    return PandasDuckframe(duckframe)
+    return PolarsDuckframe(duckframe)
 
 
 def run():
