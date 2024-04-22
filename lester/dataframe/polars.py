@@ -1,7 +1,7 @@
 import json
 
 
-# This only supports a subset of simple expressions for now, would be easy to extned
+# This only supports a subset of simple expressions for now, would be easy to extend
 def _expression_to_sql_predicate(expression_tree):
     column_name = expression_tree['BinaryExpr']['left']['Column']
     operator = expression_tree['BinaryExpr']['op']

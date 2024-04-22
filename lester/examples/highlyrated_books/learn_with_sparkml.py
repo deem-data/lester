@@ -1,40 +1,16 @@
-from lester.context import datasource, prepare, split, encode_features, model_training
-from lester.pyspark.runner import run
+from lester.context import split, encode_features, model_training, DataframeDialect, EstimatorTransformerDialect
 
 from pyspark.ml import Pipeline
-from pyspark.sql.types import IntegerType
-from pyspark.sql.functions import when, col
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.feature import HashingTF, Tokenizer, StringIndexer, OneHotEncoder, StandardScaler, VectorAssembler
 
 
-@prepare(
-    books=datasource('books', track_provenance_by=['goodreads_book_id']),
-    categories=datasource('categories', track_provenance_by=['tag_id']),
-    book_tags=datasource('book_tags'))
-def label_books(books, categories, book_tags):
-
-    english_books = books \
-        .dropna() \
-        .filter("language_code == 'eng'")
-
-    popular_categories = categories.filter("popularity >= 10")
-    categories_with_books = popular_categories.join(book_tags, on='tag_id')
-
-    labeled_books = english_books.join(categories_with_books, on='goodreads_book_id')
-    labeled_books = labeled_books.withColumn('label', when(col('average_rating') > 4.2, 1.0).otherwise(0.0))
-    labeled_books = labeled_books \
-        .withColumn('work_text_reviews_count', col('work_text_reviews_count').cast(IntegerType()))
-
-    return labeled_books
-
-
-@split()
+@split(dialect=DataframeDialect.PYSPARK)
 def random_split(data, random_seed):
     return data.randomSplit([0.8, 0.2], seed=random_seed)
 
 
-@encode_features()
+@encode_features(dialect=EstimatorTransformerDialect.SPARKML)
 def encode_books():
     stages = []
 
@@ -71,9 +47,6 @@ def encode_books():
     return Pipeline(stages=stages)
 
 
-@model_training()
+@model_training(dialect=EstimatorTransformerDialect.SPARKML)
 def logreg_with_fixed_hyperparams():
     return LogisticRegression(maxIter=10, regParam=0.001)
-
-
-run()

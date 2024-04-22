@@ -1,9 +1,9 @@
 import duckdb
 
 
-def from_tracked_source(name, path, primary_key_columns, source_id):
+def from_tracked_source(name, path, primary_key_columns):
     column_expression = ', '.join(primary_key_columns)
-    provenance_column = f"__lester_provenance_{source_id}"
+    provenance_column = f"__lester_provenance_{name}"
 
     duckdb.execute(f"""
         CREATE OR REPLACE VIEW {name}_view AS

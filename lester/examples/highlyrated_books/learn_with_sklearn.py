@@ -1,5 +1,5 @@
-from lester.context import datasource, prepare, split, encode_features, encode_target, model_training
-from lester.pandas.runner import run
+from lester.context import (split, encode_features, encode_target, model_training, DataframeDialect,
+                            EstimatorTransformerDialect)
 
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
@@ -9,34 +9,16 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import GridSearchCV
 
 import os
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
-@prepare(
-    books=datasource('books', track_provenance_by=['goodreads_book_id']),
-    categories=datasource('categories', track_provenance_by=['tag_id']),
-    book_tags=datasource('book_tags'))
-def label_books(books, categories, book_tags):
-
-    english_books = books\
-        .dropna()\
-        .query("language_code == 'eng'")
-
-    popular_categories = categories.query("popularity >= 10")
-    categories_with_books = popular_categories.merge(book_tags, on='tag_id')
-
-    labeled_books = english_books.merge(categories_with_books, on='goodreads_book_id')
-    labeled_books['is_highly_rated'] = labeled_books.eval('average_rating > 4.2')
-
-    return labeled_books
-
-
-@split()
+@split(dialect=DataframeDialect.PANDAS)
 def random_split(data, random_seed):
     return train_test_split(data, test_size=0.2, random_state=random_seed)
 
 
-@encode_features()
+@encode_features(dialect=EstimatorTransformerDialect.SKLEARN)
 def encode_books():
     embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -56,7 +38,7 @@ def encode_target():
     return LabelEncoder()
 
 
-@model_training()
+@model_training(dialect=EstimatorTransformerDialect.SKLEARN)
 def logreg_with_hpo():
     param_grid = {
         'penalty': ['l2', 'l1'],
@@ -67,5 +49,3 @@ def logreg_with_hpo():
     search = GridSearchCV(learner, param_grid, cv=5, verbose=1, n_jobs=-1)
 
     return search
-
-run()
