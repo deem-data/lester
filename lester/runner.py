@@ -92,8 +92,6 @@ def run_pipeline(source_paths, random_seed=42):
         X_train = feature_transformer.fit_transform(train_df)
         y_train = target_encoder.fit_transform(train_df[target_column])
 
-        print("Shape of X_train", X_train.shape)
-
         print("Executing model training")
         model = ctx.model_training_function()
         model.fit(X_train, y_train)

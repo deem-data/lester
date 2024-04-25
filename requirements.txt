@@ -6,3 +6,5 @@ sentence-transformers==2.6.1
 chromadb==0.4.24
 pyspark==3.5.1
 pyarrow==15.0.2
+skorch==0.15.0
+torch==2.2.2
