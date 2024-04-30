@@ -1,3 +1,5 @@
+target/
+.lester/
 *.ipynb
 data/
 .DS_Store
@@ -10,4 +12,3 @@ venv/
 *.swp
 *.py[co]
 __pycache__
-

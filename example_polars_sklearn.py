@@ -6,5 +6,6 @@ from lester.examples.highlyrated_books.learn_with_sklearn import logreg_with_hpo
 
 
 run_pipeline(
+    name='example_polars_sklearn',
     source_paths={'books': 'data/books.csv', 'categories': 'data/categories.csv', 'book_tags': 'data/book_tags.csv'},
 )

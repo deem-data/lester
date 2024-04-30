@@ -77,7 +77,7 @@ def encode_target(*args, **kwargs):
     return inner
 
 
-def model_training(*args, **kwargs):
+def train_model(*args, **kwargs):
     def inner(func):
         ctx = LesterContext()
         ctx.model_training_function = func

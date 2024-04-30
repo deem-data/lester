@@ -1,4 +1,4 @@
-from lester.context import (split, encode_features, encode_target, model_training, DataframeDialect,
+from lester.context import (split, encode_features, encode_target, train_model, DataframeDialect,
                             EstimatorTransformerDialect)
 
 from sklearn.model_selection import train_test_split

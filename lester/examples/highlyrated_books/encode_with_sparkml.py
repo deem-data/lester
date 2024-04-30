@@ -1,4 +1,4 @@
-from lester.context import split, encode_features, DataframeDialect
+from lester.context import split, encode_features, DataframeDialect, EstimatorTransformerDialect
 
 from pyspark.ml import Pipeline
 from pyspark.ml.feature import HashingTF, Tokenizer, StringIndexer, OneHotEncoder, StandardScaler, VectorAssembler
@@ -9,7 +9,7 @@ def random_split(data, random_seed):
     return data.randomSplit([0.8, 0.2], seed=random_seed)
 
 
-@encode_features()
+@encode_features(dialect=EstimatorTransformerDialect.SPARKML)
 def encode_books():
     stages = []
 

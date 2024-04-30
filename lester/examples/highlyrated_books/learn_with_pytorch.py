@@ -1,4 +1,4 @@
-from lester.context import model_training, EstimatorTransformerDialect
+from lester.context import train_model, EstimatorTransformerDialect
 
 import numpy as np
 import torch
@@ -33,7 +33,7 @@ class MyDataset(Dataset):
         return super().transform(X_transformed, y_transformed)
 
 
-@model_training(dialect=EstimatorTransformerDialect.SKLEARN)
+@train_model(dialect=EstimatorTransformerDialect.SKLEARN)
 def custom_mlp():
     return NeuralNetBinaryClassifier(
         MLP(num_features=3672),

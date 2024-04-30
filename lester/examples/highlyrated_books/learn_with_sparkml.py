@@ -1,7 +1,7 @@
-from lester.context import model_training, EstimatorTransformerDialect
+from lester.context import train_model, EstimatorTransformerDialect
 from pyspark.ml.classification import LogisticRegression
 
 
-@model_training(dialect=EstimatorTransformerDialect.SPARKML)
+@train_model(dialect=EstimatorTransformerDialect.SPARKML)
 def logreg_with_fixed_hyperparams():
     return LogisticRegression(maxIter=10, regParam=0.001)

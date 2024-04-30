@@ -1,10 +1,10 @@
-from lester.context import model_training, EstimatorTransformerDialect
+from lester.context import train_model, EstimatorTransformerDialect
 
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import GridSearchCV
 
 
-@model_training(dialect=EstimatorTransformerDialect.SKLEARN)
+@train_model(dialect=EstimatorTransformerDialect.SKLEARN)
 def logreg_with_hpo():
     param_grid = {
         'penalty': ['l2', 'l1'],
