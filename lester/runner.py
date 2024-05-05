@@ -149,6 +149,8 @@ def run_pipeline(name, source_paths, random_seed=42):
         X_train = feature_transformer.fit_transform(train_df)
         y_train = target_encoder.fit_transform(train_df[target_column])
 
+        print(feature_transformer.output_indices_)
+
         print("Executing model training")
         model = ctx.model_training_function()
         model.fit(X_train, y_train)

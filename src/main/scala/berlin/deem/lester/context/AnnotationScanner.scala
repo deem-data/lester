@@ -4,7 +4,7 @@ import scala.jdk.CollectionConverters._
 import org.reflections.Reflections
 import org.reflections.scanners.MethodAnnotationsScanner
 import org.reflections.util.{ClasspathHelper, ConfigurationBuilder}
-import java.lang.reflect.Methodx
+import java.lang.reflect.Method
 
 object AnnotationScanner {
 

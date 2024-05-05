@@ -70,8 +70,14 @@ class TrackedDataframe(
 
     val nonProvenanceColumns = this.df.columns.filterNot(_.startsWith("__lester"))
 
+    val sourceColumns: Array[String] = columnProvenance
+      .filter({ case (key: String, value: Array[String]) => nonProvenanceColumns.contains(key) })
+      .map({ case (key: String, value: Array[String]) => value})
+      .flatten
+      .toArray
+
     // TODO we would need to parse the expression to understand the provenance in detail
-    val resultColumnProvenance = this.columnProvenance ++ Map(colName -> nonProvenanceColumns)
+    val resultColumnProvenance = this.columnProvenance ++ Map(colName -> sourceColumns)
 
     new TrackedDataframe(resultDf, resultColumnProvenance, this.provenanceColumns)
   }

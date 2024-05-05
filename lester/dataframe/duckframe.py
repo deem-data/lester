@@ -96,7 +96,9 @@ class Duckframe:
         # TODO: we need a way to get the source columns from the expression
         result_column_provenance = {
             **self.column_provenance,
-            new_column: [provenance for provenance in self.column_provenance.values()]
+            new_column: [provenance_entry
+                         for provenance in self.column_provenance.values()
+                         for provenance_entry in provenance]
         }
 
         return Duckframe(result_name, result_relation, result_columns, result_column_provenance,
