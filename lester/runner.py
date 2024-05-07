@@ -4,12 +4,144 @@ import os
 import numpy as np
 import json
 from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
 
 from lester.context import LesterContext, DataframeDialect, EstimatorTransformerDialect
 from lester.dataframe.duckframe import from_tracked_source, from_source
 from lester.dataframe.pandas import PandasDuckframe
 from lester.dataframe.pyspark import PysparkDuckframe
 from lester.dataframe.polars import PolarsDuckframe
+
+
+def _find_dimensions(transformation, num_columns_transformed, start_index, end_index):
+    if isinstance(transformation, StandardScaler):
+        return [slice(start_index + index, start_index + index + 1)
+                for index in range(0, num_columns_transformed)]
+    elif isinstance(transformation, OneHotEncoder):
+        ranges = []
+        # TODO We should also include the drop and infrequent features in the calculation
+        indices = list([0]) + list(np.cumsum([len(categories) for categories in transformation.categories_]))
+        for offset in range(0, len(indices)-1):
+            ranges.append(slice(indices[offset], indices[offset+1]))
+        return ranges
+    elif isinstance(transformation, Pipeline):
+        _, last_transformation = transformation.steps[-1]
+        # TODO We should also look at the intermediate steps of the pipeline in more elaborate cases
+        return _find_dimensions(last_transformation, num_columns_transformed, start_index, end_index)
+    elif isinstance(transformation, FunctionTransformer):
+        # TODO check if the function transformer uses more than one column as input
+        return [slice(start_index, end_index)]
+    else:
+        raise Exception(f'Cannot handle transformation: {transformation}')
+
+
+def _matrix_column_provenance(column_transformer):
+    matrix_column_provenance = []
+
+    for transformer in column_transformer.transformers_:
+        name, transformation, columns = transformer
+        if name != 'remainder':
+            start_index = column_transformer.output_indices_[name].start
+            end_index = column_transformer.output_indices_[name].stop
+            num_columns_transformed = len(columns)
+            ranges = _find_dimensions(transformation, num_columns_transformed, start_index, end_index)
+
+            if ranges is not None:
+                matrix_column_provenance += list(zip(columns, ranges))
+
+    return dict(matrix_column_provenance)
+
+
+# TODO this should be refactored into a spark-specific class
+def _matrix_column_provenance_spark(feature_transformer):
+    from pyspark.ml.feature import OneHotEncoderModel, StringIndexerModel, VectorAssembler, HashingTF
+    import networkx as nx
+
+    G = nx.DiGraph()
+
+    for transformer in reversed(feature_transformer.stages):
+
+        inputs = []
+        outputs = []
+        output_sizes = None
+        is_merge = False
+
+        if isinstance(transformer, VectorAssembler):
+            is_merge = True
+
+        if transformer.hasParam('inputCol') and transformer.isSet('inputCol'):
+            inputs = [transformer.getOrDefault('inputCol')]
+        if transformer.hasParam('inputCols') and transformer.isSet('inputCols'):
+            inputs = transformer.getOrDefault('inputCols')
+
+        if transformer.hasParam('outputCol') and transformer.isSet('outputCol'):
+            outputs = [transformer.getOrDefault('outputCol')]
+        if transformer.hasParam('outputCols') and transformer.isSet('outputCols'):
+            outputs = transformer.getOrDefault('outputCols')
+
+        if isinstance(transformer, HashingTF):
+            output_sizes = [transformer.getOrDefault('numFeatures')]
+        if isinstance(transformer, OneHotEncoderModel):
+            output_sizes = [size-1 for size in transformer.categorySizes]
+        if isinstance(transformer, StringIndexerModel):
+            output_sizes = [len(labels) for labels in transformer.labelsArray]
+
+        for input_column in inputs:
+            G.add_node(input_column)
+        for output_column in outputs:
+            G.add_node(output_column)
+
+        if not is_merge:
+            if output_sizes is None:
+                for input_column, output_column in zip(inputs, outputs):
+                    G.add_edge(input_column, output_column)
+            else:
+                for input_column, output_column, size in zip(inputs, outputs, output_sizes):
+                    G.add_edge(input_column, output_column)
+                    G[input_column][output_column]['size'] = size
+
+        else:
+            output_column = outputs[0]
+            for input_column in inputs:
+                G.add_edge(input_column, output_column)
+
+    def walk_path(node, G, path, last_size):
+        if G.out_degree(node) == 0:
+            return path, last_size
+        else:
+            successor = list(G.successors(node))[0]
+
+            size = None
+            if 'size' in G[node][successor]:
+                last_size = G[node][successor]['size']
+
+            order = 0
+            for index, sucessor_predecessor in enumerate(G.predecessors(successor)):
+                if sucessor_predecessor == node:
+                    order = index
+
+            path.append((successor, order))
+
+            return walk_path(successor, G, path, last_size)
+
+    sources = [node for node in G.nodes() if G.in_degree(node) == 0]
+
+    mappings = []
+    for source in sources:
+        path, size = walk_path(source, G, [], 1)
+        orders = list(reversed([order for _, order in path]))
+        mappings.append((source, size, orders))
+
+    sorted_mappings = sorted(mappings, key=lambda x: x[2])
+
+    matrix_column_provenance = {}
+    index = 0
+    for source, size, _ in sorted_mappings:
+        matrix_column_provenance[source] = slice(index, index + size)
+        index = index + size
+
+    return matrix_column_provenance
 
 
 def __load_data(source, name_to_path, dialect):
@@ -27,6 +159,13 @@ def __load_data(source, name_to_path, dialect):
         return PysparkDuckframe(duckframe)
     else:
         return PolarsDuckframe(duckframe)
+
+
+def matrix_column_provenance_as_json(matrix_column_provenance):
+    serialized_dict = {}
+    for key, value in matrix_column_provenance.items():
+        serialized_dict[key] = (int(value.start), int(value.stop))
+    return serialized_dict
 
 
 def _save_as_json(file, python_dict):
@@ -65,8 +204,10 @@ def run_pipeline(name, source_paths, random_seed=42):
     # We need an active spark context to use some simple sql functions...
     if ctx.prepare_dialect == DataframeDialect.PYSPARK:
         from pyspark.sql import SparkSession
+        # TODO this must be configurable
         spark = SparkSession.builder \
             .master("local[4]") \
+            .config("spark.driver.bindAddress", "127.0.0.1") \
             .config("spark.driver.memory", "8g") \
             .getOrCreate()
 
@@ -107,6 +248,11 @@ def run_pipeline(name, source_paths, random_seed=42):
         model_training = ctx.model_training_function()
 
         fitted_feature_transformer = feature_transformer.fit(intermediate_train)
+
+        matrix_column_provenance = _matrix_column_provenance_spark(fitted_feature_transformer)
+        _save_as_json(f'{artifact_path}/matrix_column_provenance.json',
+                      matrix_column_provenance_as_json(matrix_column_provenance))
+        print(matrix_column_provenance)
 
         X_y_train = fitted_feature_transformer.transform(intermediate_train)
         X_y_train_df = X_y_train.select(['features', 'label']).toPandas()
@@ -149,7 +295,10 @@ def run_pipeline(name, source_paths, random_seed=42):
         X_train = feature_transformer.fit_transform(train_df)
         y_train = target_encoder.fit_transform(train_df[target_column])
 
-        print(feature_transformer.output_indices_)
+        matrix_column_provenance = _matrix_column_provenance(feature_transformer)
+        _save_as_json(f'{artifact_path}/matrix_column_provenance.json',
+                      matrix_column_provenance_as_json(matrix_column_provenance))
+        print(matrix_column_provenance)
 
         print("Executing model training")
         model = ctx.model_training_function()
