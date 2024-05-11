@@ -4,13 +4,12 @@ import berlin.deem.lester.context.{AnnotationScanner, EncodeFeatures, Prepare, S
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
 import berlin.deem.lester.dataframe.TrackedDataframe
+import berlin.deem.lester.pipeline.MatrixColumnProvenance
 import org.apache.spark.sql.functions.col
+import Utils._
 import java.io.File
 import java.util.UUID
-
-import Utils._
 
 object Runner {
 
@@ -45,7 +44,11 @@ object Runner {
 
   def run(pipelineName: String, pipelinePackage: String, nameToPath: Map[String, String], randomSeed: Long) = {
 
-    val artifactDirectoryPath = s".lester/${pipelineName}/${UUID.randomUUID()}"
+    val runId = UUID.randomUUID()
+
+    println(s"Executing ${pipelineName} with run ${runId}")
+
+    val artifactDirectoryPath = s".lester/${pipelineName}/${runId}"
     val artifactDirectory = new File(artifactDirectoryPath)
 
     if (!artifactDirectory.exists()) {
@@ -60,8 +63,11 @@ object Runner {
       AnnotationScanner.scanFor(pipelinePackage, classOf[EncodeFeatures])
     val (trainModelClassName, trainModelMethodName) = AnnotationScanner.scanFor(pipelinePackage, classOf[TrainModel])
 
+    // TODO this should be configurable
     val spark = SparkSession.builder()
       .master("local[2]")
+      .config("spark.driver.host", "127.0.0.1")
+      .config("spark.driver.bindAddress", "127.0.0.1")
       .getOrCreate()
 
     val prepareClass = Class.forName(prepareClassName)
@@ -81,6 +87,7 @@ object Runner {
     val preparedData = trackedPreparedData.df
     preparedData.cache()
 
+    println("Running data preparation")
     val (train, test) = makeCallable(splitClass, splitMethodName)
       .apply(preparedData, randomSeed)
       .asInstanceOf[(DataFrame, DataFrame)]
@@ -88,6 +95,7 @@ object Runner {
     train.cache()
     test.cache()
 
+    println("Extracting and storing row provenance")
     val trainProvenance = train
       .select(trackedPreparedData.provenanceColumns.map(col): _*)
       .coalesce(1)
@@ -107,13 +115,20 @@ object Runner {
       .apply()
       .asInstanceOf[Pipeline]
 
+    println("Encoding features for training")
     val fittedFeatureTransform = featureTransform.fit(train)
+
+    val matrixColumnProvenance = MatrixColumnProvenance.computeMatrixColumnProvenance(fittedFeatureTransform)
+    jsonToFile(matrixColumnProvenanceToJson(matrixColumnProvenance),
+      s"${artifactDirectoryPath}/matrix_column_provenance.json")
+
     val X_y_train = fittedFeatureTransform.transform(train)
     val X_y_test = fittedFeatureTransform.transform(test)
 
     X_y_train.cache()
     X_y_test.cache()
 
+    println("Saving feature and test matrices")
     val X_train = X_y_train.select("features")
     matrixAsNpyFile(X_train, s"${artifactDirectoryPath}/X_train.npy")
     val y_train = X_y_train.select("label")

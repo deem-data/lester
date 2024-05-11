@@ -112,7 +112,6 @@ def _matrix_column_provenance_spark(feature_transformer):
         else:
             successor = list(G.successors(node))[0]
 
-            size = None
             if 'size' in G[node][successor]:
                 last_size = G[node][successor]['size']
 

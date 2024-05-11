@@ -37,6 +37,14 @@ object Utils {
     }.mkString("{", ", ", "}")
   }
 
+  def matrixColumnProvenanceToJson(dataMap: Map[String, (Int, Int)]): String = {
+    val jsonEntries = dataMap.map { case (column, (start, stop)) =>
+      val jsonSlice = s"""[${start}, ${stop}]"""
+      s""""${column}": $jsonSlice"""
+    }
+    jsonEntries.mkString("{", ", ", "}")
+  }
+
   def columnProvenanceToJson(dataMap: Map[String, Array[String]]): String = {
     val jsonEntries = dataMap.map { case (key, values) =>
       val jsonValues = values.map(value => s""""$value"""").mkString("[", ", ", "]")
