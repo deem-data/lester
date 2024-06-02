@@ -3,6 +3,8 @@ import uuid
 import os
 import numpy as np
 import json
+import torch
+
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
@@ -172,7 +174,14 @@ def _save_as_json(file, python_dict):
         json.dump(python_dict, f, indent=2)
 
 
-def _persist_row_provenance(intermediate_train, intermediate_test, prov_columns, artifact_path):
+def _persist_with_row_provenance(intermediate_train, intermediate_test, prov_columns, artifact_path):
+
+    print("Persisting relational data")
+    train = duckdb.query(f"SELECT * EXCLUDE({prov_columns}) FROM intermediate_train").to_df()
+    test = duckdb.query(f"SELECT * EXCLUDE ({prov_columns}) FROM intermediate_test").to_df()
+    train.to_parquet(f'{artifact_path}/train.parquet', index=False)
+    test.to_parquet(f'{artifact_path}/test.parquet', index=False)
+
     print("Persisting provenance")
     row_provenance_X_train = duckdb.query(f"SELECT {prov_columns} FROM intermediate_train").to_df()
     row_provenance_X_test = duckdb.query(f"SELECT {prov_columns} FROM intermediate_test").to_df()
@@ -238,8 +247,8 @@ def run_pipeline(name, source_paths, random_seed=42):
         print("Splitting prepared data")
         intermediate_train, intermediate_test = ctx.split_function(prepared_data, random_seed)
 
-        _persist_row_provenance(intermediate_train.toPandas(), intermediate_test.toPandas(),
-                                prov_columns, artifact_path)
+        _persist_with_row_provenance(intermediate_train.toPandas(), intermediate_test.toPandas(),
+                                     prov_columns, artifact_path)
         # TODO remove the provenance columns here?
 
         print("Encoding training data")
@@ -282,9 +291,11 @@ def run_pipeline(name, source_paths, random_seed=42):
         print("Splitting prepared data")
         intermediate_train, intermediate_test = ctx.split_function(intermediate, random_seed)
 
-        _persist_row_provenance(intermediate_train, intermediate_test, prov_columns, artifact_path)
+        _persist_with_row_provenance(intermediate_train, intermediate_test, prov_columns, artifact_path)
         train_df = duckdb.query(f"SELECT * EXCLUDE {prov_columns} FROM intermediate_train").to_df()
         test_df = duckdb.query(f"SELECT * EXCLUDE {prov_columns} FROM intermediate_test").to_df()
+
+
 
         print("Encoding training data")
         feature_transformer = ctx.encode_features_function()
@@ -297,10 +308,10 @@ def run_pipeline(name, source_paths, random_seed=42):
         matrix_column_provenance = _matrix_column_provenance(feature_transformer)
         _save_as_json(f'{artifact_path}/matrix_column_provenance.json',
                       matrix_column_provenance_as_json(matrix_column_provenance))
-        print(matrix_column_provenance)
 
         print("Executing model training")
-        model = ctx.model_training_function()
+        num_features = X_train.shape[1]
+        model = ctx.model_training_function(num_features)
         model.fit(X_train, y_train)
 
         print("Encoding test data")
@@ -313,3 +324,7 @@ def run_pipeline(name, source_paths, random_seed=42):
         print("Score", score)
 
         _persist_matrices(X_train, y_train, X_test, y_test, y_pred, artifact_path)
+        torch.save(model.module_, f"{artifact_path}/model.pt")
+
+    return run_id
+

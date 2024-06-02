@@ -1,0 +1,77 @@
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.linear_model import LogisticRegression
+import numpy as np
+from scipy.special import expit
+from scipy.linalg import inv
+
+
+# Based on https://github.com/alewarne/MachineUnlearning/blob/main/Unlearner/LRUnlearner.py
+class UpdatableLogisticRegression(ClassifierMixin, BaseEstimator):
+
+    def __init__(self):
+        self.fitted_ = False
+        self.C = None
+        self.theta = None
+
+    def fit(self, X, y):
+        self.C = 1.0 / (X.shape[0] * 0.01)
+        sklearn_model = LogisticRegression(C=self.C, fit_intercept=False, solver='lbfgs', warm_start=True,
+                                           max_iter=5000, tol=1e-8)
+        sklearn_model.fit(X, y)
+        self.theta = np.squeeze(sklearn_model.coef_.T)
+        self.fitted_ = True
+
+    def predict(self, X):
+        dot = np.dot(X, self.theta)
+        logits = expit(dot)
+        y_pred = np.array([1 if logit >= 0.5 else 0 for logit in logits])
+        return y_pred
+
+    def approximate_update(self, X, y, updates):
+        z_X = []
+        updated_z_X = []
+        z_y = []
+
+        for row_index, patches in updates:
+            sample = X[row_index, :]
+            updated_sample = np.copy(sample)
+            for column_index, data in patches:
+                column_start_index = column_index
+                column_end_index = column_start_index + len(data)
+                updated_sample[column_start_index:column_end_index] = data
+
+            z_X.append(sample)
+            updated_z_X.append(updated_sample)
+            z_y.append(y[row_index])
+
+        z_X = np.array(z_X)
+        updated_z_X = np.array(updated_z_X)
+        z_y = np.array(z_y)
+
+        # Updates should have the form (row_index, column_start_index, column_end_index, data)
+        H_inv = self._get_inverse_hessian(X)
+
+        grad_X = self._get_gradient(z_X, z_y)
+        grad_X_updated = self._get_gradient(updated_z_X, z_y)
+
+        delta_theta = -self.C * H_inv.dot(grad_X_updated - grad_X)
+        theta_approx = self.theta + delta_theta
+        self.theta = theta_approx
+
+    def _get_gradient(self, X, y):
+        assert X.shape[0] == y.shape[0]
+        y_mult = np.copy(y)
+        y_mult[y_mult == 0] = -1
+        dot_product = np.dot(X, self.theta) * y_mult
+        factor = -expit(-dot_product) * y_mult
+        gradient = np.sum(np.expand_dims(factor, 1) * X, axis=0)
+        return gradient
+
+    def _get_inverse_hessian(self, X):
+        dot = np.dot(X, self.theta)
+        probs = expit(dot)
+        weighted_X = np.reshape(probs * (1 - probs), (-1, 1)) * X  # sigma(-t) = (1-sigma(t))
+        cov = self.C * np.dot(X.T, weighted_X)
+        cov += np.eye(X.shape[1])  # hessian of regularization
+        cov_inv = inv(cov)
+        return cov_inv

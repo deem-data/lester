@@ -2,14 +2,22 @@ import duckdb
 
 
 def from_tracked_source(name, path, primary_key_columns):
+    # For now, we only support single-column PKs
+    assert len(primary_key_columns) == 1
     column_expression = ', '.join(primary_key_columns)
     provenance_column = f"__lester_provenance_{name}"
 
+#    duckdb.execute(f"""
+#        CREATE OR REPLACE VIEW {name}_view AS
+#            SELECT
+#                *,
+#                ROW_NUMBER() OVER (ORDER BY {column_expression}) AS {provenance_column}
+#            FROM '{path}'
+#        """)
+
     duckdb.execute(f"""
         CREATE OR REPLACE VIEW {name}_view AS
-            SELECT 
-                *, 
-                ROW_NUMBER() OVER (ORDER BY {column_expression}) AS {provenance_column} 
+            SELECT *, {column_expression} AS {provenance_column} 
             FROM '{path}'
         """)
 
