@@ -1,7 +1,6 @@
 target/
 .lester/
 *.ipynb
-data/
 .DS_Store
 tmp
 build/
