@@ -85,20 +85,14 @@ def _update_test_data(artifacts, row_indexes, output_columns):
     return test_df_to_update
 
 
-def _compute_H_inv(X, theta):
-    dot = torch.matmul(X, theta)
-    probs = torch.sigmoid(dot)
-    weighted_X = probs * (1 - probs) * X
-    cov = torch.matmul(X.t(), weighted_X) + torch.eye(X.shape[1])
-    cov_inv = torch.inverse(cov)
-    return cov_inv
-
-
+# First-order update, as detailed in https://www.ndss-symposium.org/wp-content/uploads/2023/02/ndss2023_s87_paper.pdf
+# Code based on https://github.com/alewarne/MachineUnlearning/blob/main/Unlearner/DNNUnlearner.py
 def _update_model(model_to_update, loss_fn, X, z_X, updated_z_X, z_y):
 
     loss_z_X = loss_fn(model_to_update(z_X), z_y)
     loss_updated_z_X = loss_fn(model_to_update(updated_z_X), z_y)
 
+    # TODO We should be able to do this with a single autograd call
     gradients_z_X = torch.autograd.grad(loss_z_X, list(model_to_update.parameters()))
     gradients_updated_z_X = torch.autograd.grad(loss_updated_z_X, list(model_to_update.parameters()))
 
@@ -106,21 +100,12 @@ def _update_model(model_to_update, loss_fn, X, z_X, updated_z_X, z_y):
                             for (gradient_updated_z_X, gradient_z_X)
                             in zip(gradients_updated_z_X, gradients_z_X)]
 
-    parameters = [parameter.data
-                  for parameter
-                  in model_to_update.parameters()]
-
-    # Logreg specific code starting here
-    theta = parameters[0].t()
-    H_inv = _compute_H_inv(X, theta)
-
-    gradient_difference = gradient_differences[0].t()
-
-    delta_theta = -1.0 * torch.matmul(H_inv, gradient_difference)
-    updated_theta = theta + delta_theta
-
+    # TODO: Find a way to set this more intelligently
+    unlearning_rate = 1.0
+    # Manually update model parameters
     with torch.no_grad():
-        model_to_update.linear.weight.copy_(updated_theta.t())
+        for parameter, gradient_difference in zip(model_to_update.parameters(), gradient_differences):
+            parameter.data = parameter.data - unlearning_rate * gradient_difference
 
     return model_to_update
 
@@ -157,4 +142,5 @@ def delete_features(pipeline_name, run_id, source_name, source_column_name, prim
 
     z_X, updated_z_X, z_y = _compute_update_patches(X_train, y_train, train_updates)
     updated_model = _update_model(model_to_update, loss_fn, X_train, z_X, updated_z_X, z_y)
+
     return updated_train_data, updated_test_data, updated_X_train, updated_X_test, updated_model

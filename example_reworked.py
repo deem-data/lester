@@ -2,7 +2,7 @@ from lester.runner import run_pipeline
 from lester.ivm.feature_deletion import delete_features
 
 from lester.examples.highlyrated_books.reworked import (label_books, random_split, encode_books, encode_target,
-                                                        logistic_regression)
+                                                        neural_network)
 
 import time
 

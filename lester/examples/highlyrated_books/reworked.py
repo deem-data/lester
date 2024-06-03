@@ -8,6 +8,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler, LabelEncoder
 from sentence_transformers import SentenceTransformer
 import torch
+import torch.nn as nn
 from skorch import NeuralNetBinaryClassifier
 from skorch.dataset import Dataset
 
@@ -60,13 +61,18 @@ def encode_target():
     return LabelEncoder()
 
 
-class LogisticRegression(torch.nn.Module):
-    def __init__(self, num_features):
-        super(LogisticRegression, self).__init__()
-        self.linear = torch.nn.Linear(num_features, 1, bias=False)
+class MLP(nn.Module):
+
+    def __init__(self, num_features, hidden_size):
+        super(MLP, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(num_features, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 1)
+        )
 
     def forward(self, x):
-        return torch.sigmoid(self.linear(x))
+        return torch.sigmoid(self.layers(x))
 
 
 class TorchDataset(Dataset):
@@ -82,9 +88,9 @@ class TorchDataset(Dataset):
 
 
 @train_model(dialect=EstimatorTransformerDialect.SKLEARN)
-def logistic_regression(num_features):
+def neural_network(num_features):
     return NeuralNetBinaryClassifier(
-        LogisticRegression(num_features=num_features),
+        MLP(num_features=num_features, hidden_size=256),
         max_epochs=50,
         lr=0.001,
         iterator_train__shuffle=True,
