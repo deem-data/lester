@@ -157,5 +157,4 @@ def delete_features(pipeline_name, run_id, source_name, source_column_name, prim
 
     z_X, updated_z_X, z_y = _compute_update_patches(X_train, y_train, train_updates)
     updated_model = _update_model(model_to_update, loss_fn, X_train, z_X, updated_z_X, z_y)
-
     return updated_train_data, updated_test_data, updated_X_train, updated_X_test, updated_model
