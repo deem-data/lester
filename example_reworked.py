@@ -9,6 +9,7 @@ import time
 
 pipeline_name = 'example_reworked'
 
+pipeline_start_time = time.time()
 run_id = run_pipeline(
     name=pipeline_name,
     source_paths={
@@ -17,6 +18,8 @@ run_id = run_pipeline(
         'book_tags': 'data/book_tags.csv'
     },
 )
+pipeline_duration = time.time() - pipeline_start_time
+print(f"Pipeline took {int(pipeline_duration * 1000)}ms")
 
 
 print('\n\nUpdate to delete features')
