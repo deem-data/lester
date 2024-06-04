@@ -5,7 +5,9 @@ import numpy as np
 import polars as pl
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
 from sentence_transformers import SentenceTransformer
 import torch
 import torch.nn as nn
@@ -43,14 +45,18 @@ def random_split(data, random_seed):
 
 @encode_features(dialect=EstimatorTransformerDialect.SKLEARN)
 def encode_books():
-    embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    embedding_model = SentenceTransformer("all-mpnet-base-v2")
 
     def embed(column_slice):
         texts = [' '.join(column) for column in column_slice.values]
         return embedding_model.encode(texts)
 
+    categorical_pipeline = Pipeline([
+        ('imput', SimpleImputer(strategy='most_frequent')),
+        ('encode', OneHotEncoder(handle_unknown='ignore'))])
+
     return ColumnTransformer(transformers=[
-        ('categorical', OneHotEncoder(handle_unknown='ignore'), ['authors', 'tag_id', 'original_publication_year']),
+        ('categorical', categorical_pipeline, ['authors', 'tag_id', 'original_publication_year']),
         ('numerical', StandardScaler(), ['work_text_reviews_count']),
         ('embeddings', FunctionTransformer(embed), ['title']),
     ], sparse_threshold=0.0)
@@ -90,8 +96,8 @@ class TorchDataset(Dataset):
 @train_model(dialect=EstimatorTransformerDialect.SKLEARN)
 def neural_network(num_features):
     return NeuralNetBinaryClassifier(
-        MLP(num_features=num_features, hidden_size=256),
-        max_epochs=50,
+        MLP(num_features=num_features, hidden_size=64),
+        max_epochs=30,
         lr=0.001,
         iterator_train__shuffle=True,
         criterion=torch.nn.BCELoss,

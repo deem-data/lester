@@ -1,5 +1,6 @@
 from lester.runner import run_pipeline
 from lester.ivm.feature_deletion import delete_features
+from lester.ivm.instance_deletion import delete_instances
 
 from lester.examples.highlyrated_books.reworked import (label_books, random_split, encode_books, encode_target,
                                                         neural_network)
@@ -29,6 +30,18 @@ delete_features(
     run_id=run_id,
     source_name='books',
     source_column_name='title',
+    primary_keys=[13, 87, 113],
+)
+update_duration = time.time() - update_start_time
+print(f"Update took {int(update_duration * 1000)}ms")
+
+
+print('\n\nUpdate to delete instances')
+update_start_time = time.time()
+delete_instances(
+    pipeline_name=pipeline_name,
+    run_id=run_id,
+    source_name='books',
     primary_keys=[13, 87, 113],
 )
 update_duration = time.time() - update_start_time
