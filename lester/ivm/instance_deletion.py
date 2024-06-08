@@ -3,7 +3,6 @@ import numpy as np
 import copy
 
 from lester.ivm.artifacts import Artifacts
-from lester.ivm.provenance import ProvenanceQueries
 
 
 def _first_order_unlearning(model, X_to_unlearn, y_to_unlearn):
