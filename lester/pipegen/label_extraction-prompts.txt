@@ -1,0 +1,5 @@
+Write me python code to compute a binary label for a pandas dataframe with the following columns: title, text, bank, country, sentiment, is_premium. The logic for the label is:
+
+Assign a label of 1.0 to all rows where the sentiment is 'negative' and the 'is_premium' column is True.
+
+Respond with Python code only. Generate a function called `extract_label` which takes a dataframe as input and returns a numpy array with the label as output.

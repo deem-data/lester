@@ -1,0 +1,4 @@
+The following Python reads a CSV file and manually encodes the data as feature for a machine learning model. Please rewrite the code to use estimator/transformers from scikit-learn and the ColumnTransformer from scikit learn. Only respond with python code. Create a function called `encode_features` which returns an unfitted ColumnTransformer which contains the feature encoding logic. The `encode_features` function should be able to work on data that follows the exact schema of the CSV file.
+
+# TODO
+sparse -> sparse_output

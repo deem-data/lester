@@ -1,0 +1,7 @@
+The following code is written in python with for loops and manual data parsing. Please rewrite the code to use a dataframe library called lester. lester has an API similar to pandas and supports the following operations from pandas: 'merge', 'query', 'assign', 'explode', 'rename'. The 'assign' method in lester has two additional parameters: `target_column` and `source_columns`; `target_column` refers to the new column which should be created, while `source_columns` refers to the list of input columns that are used by the expression in `assign`. Please create a single, separate `assign` statement for each new column that is computed. Only respond with python code. Do not iterate over dataframes. The code should contain a single function called `_lester_dataprep`, which returns a single dataframe called `result_df` as result. This final dataframe should have the following columns: title, text, bank, country, sentiment, is_premium
+
+In the following Python code, please make sure that all local variables referenced in the query function start with '@':
+
+In the following Python code, please rename the function `assign` to `project`, the function `merge` to `join` and the function `query` to `filter`.
+
+The function `_lester_dataprep` in the following Python code reads CSV files from hardcoded paths. Please rewrite the code such that the function `_lester_dataprep` accepts the paths as function arguments. Respond with Python code only.

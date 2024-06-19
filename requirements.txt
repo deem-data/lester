@@ -10,3 +10,5 @@ skorch==0.15.0
 torch==2.2.2
 polars==0.20.23
 networkx==3.2.1
+sentence-transformers==3.0.1
+Faker==25.8.0

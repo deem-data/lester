@@ -10,10 +10,10 @@ from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardSc
 from sklearn.pipeline import Pipeline
 
 from lester.context import LesterContext, DataframeDialect, EstimatorTransformerDialect
-from lester.dataframe.duckframe import from_tracked_source, from_source
-from lester.dataframe.pandas import PandasDuckframe
-from lester.dataframe.pyspark import PysparkDuckframe
-from lester.dataframe.polars import PolarsDuckframe
+from lester.tracked_dataframe.duckframe import from_tracked_source, from_source
+from lester.tracked_dataframe.pandas import PandasDuckframe
+from lester.tracked_dataframe.pyspark import PysparkDuckframe
+from lester.tracked_dataframe.polars import PolarsDuckframe
 
 
 def _find_dimensions(transformation, num_columns_transformed, start_index, end_index):
