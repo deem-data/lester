@@ -2,19 +2,21 @@ import torch
 import numpy as np
 import copy
 
+from lester.utils import hash_str
 from lester.ivm.artifacts import Artifacts
 from lester.ivm.provenance import ProvenanceQueries
 
 
-def _compute_updates(row_indexes, feature_ranges):
+def _compute_updates(row_indexes, all_feature_ranges):
     updates = []
     for row_index in row_indexes:
         patches = []
-        for feature_range in feature_ranges:
-            start, end = feature_range
-            length = end - start
-            patch = (start, np.zeros(length))
-            patches.append(patch)
+        for feature_ranges in all_feature_ranges:
+            for feature_range in feature_ranges:
+                start, end = feature_range
+                length = end - start
+                patch = (start, np.zeros(length))
+                patches.append(patch)
         update = (row_index, patches)
         updates.append(update)
     return updates
@@ -110,14 +112,18 @@ def _update_model(model_to_update, loss_fn, X, z_X, updated_z_X, z_y):
     return model_to_update
 
 
-def delete_features(pipeline_name, run_id, source_name, source_column_name, primary_keys):
+def delete_features(pipeline_name, run_id, column_source_path, source_column_name, row_source_path,
+                    row_provenance_identifiers):
+
+    column_source_name = hash_str(column_source_path)
+    row_source_name = hash_str(row_source_path)
 
     artifacts = Artifacts(pipeline_name, run_id)
     prov_queries = ProvenanceQueries(artifacts)
 
-    output_columns = prov_queries.output_columns(source_name, source_column_name)
-    train_row_indexes = prov_queries.train_rows_originating_from(source_name, primary_keys)
-    test_row_indexes = prov_queries.test_rows_originating_from(source_name, primary_keys)
+    output_columns = prov_queries.output_columns(column_source_name, source_column_name)
+    train_row_indexes = prov_queries.train_rows_originating_from(row_source_name, row_provenance_identifiers)
+    test_row_indexes = prov_queries.test_rows_originating_from(row_source_name, row_provenance_identifiers)
 
     updated_train_data = _update_train_data(artifacts, train_row_indexes, output_columns)
     updated_test_data = _update_test_data(artifacts, test_row_indexes, output_columns)

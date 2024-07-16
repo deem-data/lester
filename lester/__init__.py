@@ -1,5 +1,5 @@
 import pandas as pd
-import zlib
+from lester.utils import hash_str
 
 GLOBAL_VARIABLES_FROM_CALLER = {}
 LOCAL_VARIABLES_FROM_CALLER = {}
@@ -15,7 +15,7 @@ def make_accessible(local_variables, global_variables):
 
 def read_csv(path, header, names):
     df = pd.read_csv(path, header=header, names=names)
-    source_name = hex(zlib.crc32(str.encode(path)))
+    source_name = hash_str(path)
     column_provenance = {
         column: [f"{source_name}.{column}"] for column in df.columns
     }

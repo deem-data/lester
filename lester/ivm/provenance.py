@@ -3,16 +3,16 @@ class ProvenanceQueries:
     def __init__(self, artifacts):
         self.artifacts = artifacts
 
-    def train_rows_originating_from(self, source_name, primary_keys):
+    def train_rows_originating_from(self, source_name, provenance_identifiers):
         train_prov = self.artifacts.load_train_provenance()
         prov_column = self.artifacts.provenance_column_name(source_name)
-        row_indexes = train_prov.index[train_prov[prov_column].isin(primary_keys)].tolist()
+        row_indexes = train_prov.index[train_prov[prov_column].isin(provenance_identifiers)].tolist()
         return row_indexes
 
-    def test_rows_originating_from(self, source_name, primary_keys):
+    def test_rows_originating_from(self, source_name, provenance_identifiers):
         test_prov = self.artifacts.load_test_provenance()
         prov_column = self.artifacts.provenance_column_name(source_name)
-        row_indexes = test_prov.index[test_prov[prov_column].isin(primary_keys)].tolist()
+        row_indexes = test_prov.index[test_prov[prov_column].isin(provenance_identifiers)].tolist()
         return row_indexes
 
     def output_columns(self, source_name, source_column_name):

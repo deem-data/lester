@@ -99,7 +99,7 @@ def encode_features():
     ])
 
     country_pipeline = Pipeline([
-        ('onehot', OneHotEncoder(sparse_output=False))
+        ('onehot', OneHotEncoder(sparse_output=False))  # NEEDED TO BE MANUALLY EDITED
     ])
 
     preprocessor = ColumnTransformer([
