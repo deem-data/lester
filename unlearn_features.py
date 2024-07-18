@@ -1,8 +1,8 @@
 
 pipeline_name = 'lester-gen'
-run_id = '05b10a0d-70eb-44e2-a1ec-274bfe022afb'
-customers_source_path = 'data/synthetic_customers_1000.csv'
-mails_source_path = 'data/synthetic_mails_1000.csv'
+run_id = 'a76c9ee6-2e26-48c5-807a-5732ced9e88c'
+customers_source_path = 'data/synthetic_customers_10000.csv'
+mails_source_path = 'data/synthetic_mails_10000.csv'
 source_column_name = 'mail_subject'
 row_provenance_ids = [4, 6]
 
