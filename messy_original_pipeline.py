@@ -10,9 +10,6 @@ from torch import nn
 from skorch import NeuralNetBinaryClassifier
 from neuralnet import custom_mlp
 
-from tqdm import tqdm
-
-
 def messy_pipeline(customers_path, mails_path):
     target_countries = ['UK', 'DE', 'FR']
     customer_data = {}
@@ -26,18 +23,16 @@ def messy_pipeline(customers_path, mails_path):
         return text.lower()
 
     with open(".scratchspace/__intermediate.csv", 'w') as output_file:
-        print('### Processing customers file')
         with open(customers_path) as file:
-            for line in tqdm(file):
+            for line in file:
                 parts = line.strip().split(',')
                 customer_id, customer_email, bank, country, level = parts
                 is_premium = (level == 'premium')
                 if country in target_countries:
                     customer_data[customer_email] = (bank, country, is_premium)
 
-        print('### Processing mails file')
         with open(mails_path) as file:
-            for line in tqdm(file):
+            for line in file:
                 parts = line.strip().split(",")
                 mail_id, email, raw_date, mail_subject, mail_text = parts
                 mail_date = parser.parse(raw_date)
@@ -66,7 +61,6 @@ def messy_pipeline(customers_path, mails_path):
     countries = []
 
 
-    print('### Processing intermediates file')
     with open(".scratchspace/__intermediate.csv") as file:
         for line in file:
             parts = line.strip().split("\t")
@@ -109,7 +103,6 @@ def messy_pipeline(customers_path, mails_path):
 
     num_features = X.shape[1]
 
-    print('### Training model')
     neuralnet = custom_mlp(num_features)
     model = neuralnet.fit(
         torch.from_numpy(X).float(),
