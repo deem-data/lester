@@ -25,11 +25,11 @@ As detailed in our submission, we consider it future work to streamline this rew
  1. Baseline -- retraining from scratch: 
     * Implementation available at [experiment__retraining_time.py](https://github.com/deem-data/lester/blob/main/experiment__retraining_time.py)
     * Execution via `python experiment__retraining_time.py --num_customers <num_customers> --num_repetitions <num_repetitions>`
- 1. Incremental updates with lester 
-   * Initial execution of the pipeline via `python creditcard_example__initial_execution.py` (requires adjustment of source paths to point to the generated data)
-   * IVM update of the captured artifacts of the pipeline
-     * Implementation available at [experiment__ivm.py](https://github.com/deem-data/lester/blob/main/experiment__ivm.py)
-     * Execution via `python experiment__ivm.py --run_id <run_id> --num_customers <num_customers> --num_repetitions <num_repetitions>`
+ 1. Incremental updates with Lester 
+    * Initial execution of the pipeline via `python creditcard_example__initial_execution.py` (requires adjustment of source paths to point to the generated data)
+    * IVM update of the captured artifacts of the pipeline
+      * Implementation available at [experiment__ivm.py](https://github.com/deem-data/lester/blob/main/experiment__ivm.py)
+      * Execution via `python experiment__ivm.py --run_id <run_id> --num_customers <num_customers> --num_repetitions <num_repetitions>`
 
 ### User Study
 
