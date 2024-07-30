@@ -10,6 +10,12 @@ We provide the source code for our prototypical implementation of our proposed p
  * [IVM updates for a small number of changes input values](https://github.com/deem-data/lester/blob/main/lester/ivm/feature_deletion.py)
  * [IVM updates to remove input samples](https://github.com/deem-data/lester/blob/main/lester/ivm/instance_deletion.py) (not covered in submisson)
 
+## Code Rewriting with LLMs
+ * We provide the [messy original code for the ML pipeline](https://github.com/deem-data/lester/blob/main/messy_original_pipeline.py) from our running example
+ * We detail the [hand-crafted prompts](https://github.com/deem-data/lester/blob/main/llm-based-rewrites.md) that we used for rewriting our example pipeline 
+ * We provide the [generated pipeline code](https://github.com/deem-data/lester/blob/main/generated_pipeline_code.py) and mark code locations that needed manual fixing
+
+As detailed in our submission, we consider it future work to streamline this rewriting process with a conversational interface.
 
 ## Experiments
 
