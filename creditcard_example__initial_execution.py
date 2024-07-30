@@ -14,8 +14,8 @@ from generated_pipeline_code import *
 lt.make_accessible(locals(), globals())
 
 source_paths = {
-    'customers_path': 'data/synthetic_customers_10000.csv',
-    'mails_path': 'data/synthetic_mails_10000.csv'
+    'customers_path': 'data/synthetic_customers_100.csv',
+    'mails_path': 'data/synthetic_mails_100.csv'
 }
 
 run_pipeline("lester-gen", source_paths, _lester_dataprep, encode_features, extract_label, custom_mlp)

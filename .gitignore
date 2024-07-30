@@ -1,7 +1,5 @@
-*.ipynb
 target/
 .lester/
-*.ipynb
 .DS_Store
 tmp
 build/
