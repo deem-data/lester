@@ -116,3 +116,120 @@ def _lester_dataprep(customers_path, mails_path):
     return result_df
 ```
 
+# Feature encoding
+
+### Messy original code
+
+```python
+    import numpy as np
+    from sentence_transformers import SentenceTransformer
+
+    sentence_embedder = SentenceTransformer("all-mpnet-base-v2")
+
+    def count_words(text):
+        return len(text.split(" "))
+
+    country_indices = {'DE': 0, 'FR': 1, 'UK': 2}
+
+    titles = []
+    title_lengths = []
+    texts = []
+    countries = []
+
+
+    with open(".scratchspace/__intermediate.csv") as file:
+        for line in file:
+            parts = line.strip().split("\t")
+            title, text, bank, country, sentiment, is_premium = parts
+
+            titles.append(title)
+            title_lengths.append(len(title))
+            texts.append(text)
+            countries.append(country)
+
+    print('### Embedding titles')
+    subject_embeddings = sentence_embedder.encode(titles)
+    print('### Embedding mails')
+    text_embeddings = sentence_embedder.encode(texts)
+    title_lengths_column = np.array(title_lengths)
+    title_lengths_column = (title_lengths_column - np.mean(title_lengths_column)) / np.std(title_lengths_column)
+
+    country_onehot = np.zeros((len(countries), len(country_indices)))
+    for row, country in enumerate(countries):
+        country_onehot[row, country_indices[country]] = 1.0
+
+
+    X = np.concatenate((
+        subject_embeddings,
+        text_embeddings,
+        title_lengths_column.reshape(-1,1),
+        country_onehot
+    ), axis=1)
+```
+
+### Prompt: Introducing declarative sklearn estimator/transformers
+
+<code>The following Python reads a CSV file and manually encodes the data as feature for a machine learning model. Please rewrite the code to use estimator/transformers from scikit-learn and the ColumnTransformer from scikit learn. Only respond with python code. Create a function called `encode_features` which returns an unfitted ColumnTransformer which contains the feature encoding logic. The `encode_features` function should be able to work on data that follows the exact schema of the CSV file.</code>
+
+### Resulting generated code (with manual fixes highlighted)
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sentence_transformers import SentenceTransformer
+
+
+class SentenceEmbeddingTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, model_name="all-mpnet-base-v2"):
+        self.model_name = model_name
+        self.model = None
+
+    def fit(self, X, y=None):
+        self.model = SentenceTransformer(self.model_name)
+        return self
+
+    def transform(self, X, y=None):
+        X = [elem[0] for elem in X.values]  # NEEDED TO BE MANUALLY ADDED!
+        return self.model.encode(X)
+
+
+class WordCountTransformer(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        X = [elem[0] for elem in X.values]  # NEEDED TO BE MANUALLY ADDED!
+        return np.array([len(text.split(" ")) for text in X]).reshape(-1, 1)
+
+
+def encode_features():
+    subject_pipeline = Pipeline([
+        ('embedding', SentenceEmbeddingTransformer()),
+    ])
+
+    text_pipeline = Pipeline([
+        ('embedding', SentenceEmbeddingTransformer()),
+    ])
+
+    subject_length_pipeline = Pipeline([
+        ('length', WordCountTransformer()),
+        ('scaler', StandardScaler()),
+    ])
+
+    country_pipeline = Pipeline([
+        ('onehot', OneHotEncoder(sparse_output=False))  # NEEDED TO BE MANUALLY EDITED
+    ])
+
+    preprocessor = ColumnTransformer([
+        ('subject_embedding', subject_pipeline, ['title']),
+        ('text_embedding', text_pipeline, ['text']),
+        ('subject_length', subject_length_pipeline, ['title']),
+        ('country', country_pipeline, ['country'])
+    ])
+
+    return preprocessor
+```
