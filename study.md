@@ -2,12 +2,16 @@
 
 We conduct a small user study to showcase that even basic tasks like computing certain metadata in ML pipelines are difficult for data scientists without system support.
 
-### Pipeline to modify
+### Tasks
 
-https://colab.research.google.com/drive/1Kk4BTmRcgNffNSJrE3Hv6hIMvm03jRaZ
+Participants are asked to extend the ML pipeline available in this colab notebook: https://colab.research.google.com/drive/1Kk4BTmRcgNffNSJrE3Hv6hIMvm03jRaZ
 
-Reference solution
-https://colab.research.google.com/drive/1UgkzlRJf1gUcN-mvRt9sik0jc0DYHMb5
+In particular, they should implement the following tasks:
+
+* **T1** – Assess the group fairness of the pipeline for third-party reviews and non-third-party reviews. The chosen fairness metric is “equal opportunity”, e.g., the difference in false negative rates of the predictions for both groups on the test data.
+* **T2** – Track the record usage for the products and ratings relations by computing two boolean arrays for them, which denote which records in the relations have been used to train the model
+
+Note that we provide a reference solution here as part of our materials: https://colab.research.google.com/drive/1UgkzlRJf1gUcN-mvRt9sik0jc0DYHMb5 
 
 ### Questions
 
