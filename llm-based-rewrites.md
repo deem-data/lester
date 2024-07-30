@@ -1,5 +1,8 @@
+# Prompts for rewriting the messy imperative example code to our declarative pipeline abstraction
 
-# Relational data preparation
+In the following, we detail our handcrated prompts, which we used to transform the messy imperative pipeline code from our example to our declarative abstraction. We manually fed the sequence of prompts into GPT-4 with the respective code outputs of the previous LLM call. Our goal is to showcase the potential of LLMs to turn imperative code into declarative statements, based on a set of hand-crafted prompts, and we do not (yet) present a conversational system to automate this process. We consider it important future work to streamline and generalise the rewriting process to minimise the amount of manual corrections necessary, e.g., via an agent-based conversational approach.
+
+## Relational data preparation
 
 ### Messy original code
 
@@ -47,19 +50,47 @@ with open("./test.csv", 'w') as output_file:
 
 ### Prompt 1: Introducing declarative dataframe operations 
 
-<code>The following code is written in python with for loops and manual data parsing. Please rewrite the code to use a dataframe library called lester. lester has an API similar to pandas and supports the following operations from pandas: 'merge', 'query', 'assign', 'explode', 'rename'. The 'assign' method in lester has two additional parameters: `target_column` and `source_columns`; `target_column` refers to the new column which should be created, while `source_columns` refers to the list of input columns that are used by the expression in `assign`. Please create a single, separate `assign` statement for each new column that is computed. Only respond with python code. Do not iterate over dataframes. The code should contain a single function called `_lester_dataprep`, which returns a single dataframe called `result_df` as result. This final dataframe should have the following columns: title, text, bank, country, sentiment, is_premium</code>
+```
+The following code is written in python with for loops and manual data parsing. Please rewrite the code to use
+a dataframe library called lester. lester has an API similar to pandas and supports the following operations
+from pandas: 'merge', 'query', 'assign', 'explode', 'rename'. The 'assign' method in lester has two additional
+parameters: `target_column` and `source_columns`; `target_column` refers to the new column which should be
+created, while `source_columns` refers to the list of input columns that are used by the expression in `assign`.
+Please create a single, separate `assign` statement for each new column that is computed. Only respond with python
+code. Do not iterate over dataframes. The code should contain a single function called `_lester_dataprep`, which
+returns a single dataframe called `result_df` as result. This final dataframe should have the following
+columns: [list of output columns insert here]
+
+[code inserted here]
+```
 
 ### Prompt 2:  Making sure that local variables and functions are correctly referenced in expressions
 
-<code>In the following Python code, please make sure that all local variables referenced in the query function start with '@':</code>
+```
+In the following Python code, please make sure that all local variables referenced in the query function
+start with '@':
+
+[code inserted here]
+```
 
 ### Prompt 3:  Using lester's method names instead of Pandas method names
 
-<code>In the following Python code, please rename the function `assign` to `project`, the function `merge` to `join` and the function `query` to `filter`.</code>
+```
+In the following Python code, please rename the function `assign` to `project`, the function `merge` to
+`join` and the function `query` to `filter`.
+
+[code inserted here]
+```
 
 ### Prompt 4:  Remove hardcoded input paths
 
-<code>The function `_lester_dataprep` in the following Python code reads CSV files from hardcoded paths. Please rewrite the code such that the function `_lester_dataprep` accepts the paths as function arguments. Respond with Python code only.</code>
+```
+The function `_lester_dataprep` in the following Python code reads CSV files from hardcoded paths. Please
+rewrite the code such that the function `_lester_dataprep` accepts the paths as function arguments.
+Respond with Python code only.
+
+[code inserted here]
+```
 
 ### Resulting generated code
 
@@ -116,7 +147,7 @@ def _lester_dataprep(customers_path, mails_path):
     return result_df
 ```
 
-# Feature encoding
+## Feature encoding
 
 ### Messy original code
 
