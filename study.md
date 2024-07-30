@@ -25,3 +25,5 @@ Note that we provide a reference solution here as part of our materials: https:/
 * Would you use a tool which can automate these tasks?
 
 ### Partipicant notebooks
+
+We provide the anonymised notebooks of our nine participants [for download](https://github.com/deem-data/lester/raw/main/user-study/participants-notebooks.zip).
