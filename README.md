@@ -7,7 +7,7 @@ We provide the source code for our prototypical implementation of our proposed p
  * [Dataframes with row and column provenance tracking](https://github.com/deem-data/lester/blob/main/lester/__init__.py#L33)
  * [Matrix column provenance tracking for estimator/transformers](https://github.com/deem-data/lester/blob/main/lester/feature_provenance.py)
  * [Execution of pipelines for supervised learning](https://github.com/deem-data/lester/blob/main/lester/classification.py)
- * [IVM updates for a small number of changes input values](https://github.com/deem-data/lester/blob/main/lester/ivm/feature_deletion.py)
+ * [IVM updates for a small number of changed input values](https://github.com/deem-data/lester/blob/main/lester/ivm/feature_deletion.py)
  * [IVM updates to remove input samples](https://github.com/deem-data/lester/blob/main/lester/ivm/instance_deletion.py) (not covered in submisson)
 
 ## Code Rewriting with LLMs
@@ -21,15 +21,15 @@ As detailed in our submission, we consider it future work to streamline this rew
 
 ### Benefits of incremental view maintenance for a deployed ML pipeline
 
- * Generate synthetic data for experimentation with the following jupyter notebook: https://github.com/deem-data/lester/blob/main/utils/generate_synthetic_data.ipynb
-   
- * Baseline: Run the original pipeline from scratch as a baseline via
-`python experiment__retraining_time.py --num_customers <num_customers> --num_repetitions <num_repetitions>`
- * IVM with lester ( and the run id for the directory with the captured artifacts)
-   * Initial execution of pipeline (adjust source paths to point to generated data) 
-     `python creditcard_example__initial_execution.py`
+ 1. Generate synthetic data for experimentation with the following jupyter notebook: https://github.com/deem-data/lester/blob/main/utils/generate_synthetic_data.ipynb
+ 1. Baseline -- retraining from scratch: 
+    * Implementation available at [experiment__retraining_time.py](https://github.com/deem-data/lester/blob/main/experiment__retraining_time.py)
+    * Execution via `python experiment__retraining_time.py --num_customers <num_customers> --num_repetitions <num_repetitions>`
+ 1. Incremental updates with lester 
+   * Initial execution of the pipeline via `python creditcard_example__initial_execution.py` (requires adjustment of source paths to point to the generated data)
    * IVM update of the captured artifacts of the pipeline
-`python experiment__ivm.py --run_id <run_id> --num_customers <num_customers> --num_repetitions <num_repetitions>`
+     * Implementation available at [experiment__ivm.py](https://github.com/deem-data/lester/blob/main/experiment__ivm.py)
+     * Execution via `python experiment__ivm.py --run_id <run_id> --num_customers <num_customers> --num_repetitions <num_repetitions>`
 
 ### User Study
 
