@@ -3,8 +3,8 @@ import numpy as np
 import copy
 
 from lester.utils import hash_str
-from lester.ivm.artifacts import Artifacts
-from lester.ivm.provenance import ProvenanceQueries
+from lester.unlearning.artifacts import Artifacts
+from lester.unlearning.provenance import ProvenanceQueries
 
 
 def _compute_updates(row_indexes, all_feature_ranges):

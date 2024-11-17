@@ -1,20 +1,10 @@
 import pandas as pd
+import inspect
 from lester.utils import hash_str
 
-GLOBAL_VARIABLES_FROM_CALLER = {}
-LOCAL_VARIABLES_FROM_CALLER = {}
 
-
-# TODO check if there is some trick to avoid this...
-def make_accessible(local_variables, global_variables):
-    global GLOBAL_VARIABLES_FROM_CALLER
-    GLOBAL_VARIABLES_FROM_CALLER = global_variables
-    global LOCAL_VARIABLES_FROM_CALLER
-    LOCAL_VARIABLES_FROM_CALLER = local_variables
-
-
-def read_csv(path, header, names):
-    df = pd.read_csv(path, header=header, names=names)
+def read_csv(path, header=None, names=None, sep=',', parse_dates=False):
+    df = pd.read_csv(path, header=header, names=names, sep=sep, parse_dates=parse_dates)
     source_name = hash_str(path)
     column_provenance = {
         column: [f"{source_name}.{column}"] for column in df.columns
@@ -28,6 +18,28 @@ def read_csv(path, header, names):
 
 def join(left_df, right_df, left_on, right_on):
     return left_df.join(right_df, left_on, right_on)
+
+
+def union(tracked_dataframes):
+    result_source_names = [tracked.source_name for tracked in tracked_dataframes]
+    result_df = pd.concat([tracked.df for tracked in tracked_dataframes])
+    # TODO this currently assumes that the row provenance polynomials have equal structure
+    first = tracked_dataframes[0]
+    result_row_provenance_columns = first.row_provenance_columns
+    result_column_provenance = first.column_provenance
+    return TrackedDataframe(result_source_names, result_df, result_row_provenance_columns, result_column_provenance)
+
+
+def split(tracked_dataframe, fraction):
+    from sklearn.model_selection import train_test_split
+    first_df, second_df = train_test_split(tracked_dataframe.df, train_size=fraction,
+                                           test_size=(1.0 - fraction), shuffle=True)
+
+    first = TrackedDataframe(tracked_dataframe.source_name, first_df, tracked_dataframe.row_provenance_columns,
+                             tracked_dataframe.column_provenance)
+    second = TrackedDataframe(tracked_dataframe.source_name, second_df, tracked_dataframe.row_provenance_columns,
+                              tracked_dataframe.column_provenance)
+    return first, second
 
 
 class TrackedDataframe:
@@ -49,10 +61,20 @@ class TrackedDataframe:
         return TrackedDataframe(self.source_name, result_df, result_row_provenance_columns, result_column_provenance)
 
     def filter(self, predicate_expression):
+
+        previous_frame = inspect.currentframe().f_back
+        previous_previous_frame = previous_frame.f_back
+
+        local_variables = previous_frame.f_locals
+        local_variables.update(previous_previous_frame.f_locals)
+
+        global_variables = previous_frame.f_globals
+        global_variables.update(previous_previous_frame.f_globals)
+
         result_row_provenance_columns = self.row_provenance_columns
         result_column_provenance = self.column_provenance
         result_df = self.df.query(predicate_expression,
-                                  local_dict=LOCAL_VARIABLES_FROM_CALLER, global_dict=GLOBAL_VARIABLES_FROM_CALLER)
+                                  local_dict=local_variables, global_dict=global_variables)
         return TrackedDataframe(self.source_name, result_df, result_row_provenance_columns, result_column_provenance)
 
     def __getitem__(self, columns):
@@ -63,6 +85,19 @@ class TrackedDataframe:
         result_df = self.df[target_columns]
         return TrackedDataframe(self.source_name, result_df, result_row_provenance_columns, result_column_provenance)
 
+    def rename(self, column_mapping):
+        result_row_provenance_columns = self.row_provenance_columns
+        result_column_provenance = self.column_provenance.copy()
+        for old_column_name, new_column_name in column_mapping.items():
+            result_column_provenance[new_column_name] = result_column_provenance[old_column_name]
+        for old_column_name in column_mapping.keys():
+            del result_column_provenance[old_column_name]
+
+        result_df = self.df.copy(deep=True)
+        result_df = result_df.rename(columns=column_mapping)
+
+        return TrackedDataframe(self.source_name, result_df, result_row_provenance_columns, result_column_provenance)
+
     def project(self, target_column, source_columns, func):
         result_row_provenance_columns = self.row_provenance_columns
         result_column_provenance = self.column_provenance.copy()
@@ -70,7 +105,7 @@ class TrackedDataframe:
 
         target_column_values = []
         for _, row in self.df.iterrows():
-            target_column_values.append(func(row))
+            target_column_values.append(func(row[source_columns].item()))
 
         result_df = self.df.copy(deep=True)
         result_df[target_column] = target_column_values

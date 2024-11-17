@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import copy
 
-from lester.ivm.artifacts import Artifacts
+from lester.unlearning.artifacts import Artifacts
 
 
 def _first_order_unlearning(model, X_to_unlearn, y_to_unlearn):

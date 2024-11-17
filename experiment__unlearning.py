@@ -1,4 +1,4 @@
-from lester.ivm.feature_deletion import delete_features
+from lester.unlearning.feature_deletion import delete_features
 import numpy as np
 import torch
 
