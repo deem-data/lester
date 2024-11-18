@@ -29,7 +29,7 @@ Here is the code to rewrite:
 {code}
 """
 
-DATAPREP_FIX = """
+FIX = """
 The generated code did not execute correctly, but produced the following error:
 
 {error_message}
@@ -39,4 +39,25 @@ Please rewrite the code to fix this error. Here is the code with the error that 
 {generated_code}
 
 ONLY RESPOND WITH PYTHON CODE. DO NOT CHANGE THE SEMANTICS OF THE CODE. RETURN THE FULL CODE FOR THE TASK!!!
+"""
+
+FEATURISATION_COT = """
+The following code featurises a dataframe for a machine learning task and is written in Python. 
+Your task is to rewrite the code to use the scikit-learn API without changing the code semantics.
+
+Proceed in the following way:
+1. Rewrite the python code such that all feature encoding operations use the Estimator/Transformer API from scikit-learn. 
+2. Replace handwritten featurisation code with the corresponding Estimator/Transformer implementations from scikit-learn or generate new Estimator/Transformers if necessary.
+3. Rewrite the python code such that all the code is contained in a single function with the name and signature ``__featurise()``. The goal of this function is to featurise a dataframe with the following columns: {columns}. This function has no arguments!
+5. Rewrite the python code such that global variables and imports are moved into the ``__featurise`` function. Make sure that no imports from the original code are missing!
+6. Rewrite the python code to use the ColumnTransformer from scikit-learn to combine all features. Make sure that the ``columns`` argument (the third value in the tuples supplied as the ``transformers`` parameter) is either a string or a list of strings, depending on the chosen Estimator/Transformer.
+7. Return an unfitted instance of this ColumnTransformer from the ``__featurise`` function.
+
+IMPORTANT: IGNORE CODE which prepares the label. This code will be handled separately. DO NOT MODIFY THE 
+
+ONLY RESPOND WITH PYTHON CODE. DO NOT CHANGE THE SEMANTICS OF THE CODE.
+
+Here is the code to rewrite:
+
+{code}
 """

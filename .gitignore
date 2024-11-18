@@ -1,5 +1,6 @@
+.scratchspace/*
 target/
-.lester/
+.lester/lester-gen
 .DS_Store
 tmp
 build/

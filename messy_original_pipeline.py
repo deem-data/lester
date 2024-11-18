@@ -33,8 +33,8 @@ with open(".scratchspace/__intermediate.csv", 'w') as output_file:
         for line in file:
             parts = line.strip().split(",")
             mail_id, email, raw_date, mail_subject, mail_text = parts
-            mail_date = parser.parse(raw_date)
-            if mail_date.year >= 2022 and matches_usecase(mail_text):
+        mail_year = int(raw_date.split("-")[0])
+        if mail_year >= 2022:
                 if email in customer_data:
                     bank, country, is_premium = customer_data[email]
                     title = sanitize(mail_subject)

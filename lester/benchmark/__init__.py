@@ -30,3 +30,24 @@ class DataprepCodeTransformationTask(ABC):
     @abstractmethod
     def evaluate_transformed_code(self, transformed_code):
         pass
+
+
+class FeaturisationCodeTransformationTask(ABC):
+
+    @property
+    @abstractmethod
+    def original_code(self):
+        pass
+
+    @property
+    @abstractmethod
+    def input_schema(self):
+        pass
+
+    @abstractmethod
+    def run_manually_rewritten_code(self, params):
+        pass
+
+    @abstractmethod
+    def evaluate_transformed_code(self, transformed_code):
+        pass

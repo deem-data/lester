@@ -6,3 +6,8 @@ skorch==0.15.0
 torch==2.2.2
 sentence-transformers==3.0.1
 Faker==25.8.0
+langchain-community==0.3.1
+langgraph==0.2.34
+langchain-anthropic==0.2.1
+langgraph-checkpoint-sqlite==2.0.0
+langchain-openai==0.2.1

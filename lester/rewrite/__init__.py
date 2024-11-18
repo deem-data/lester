@@ -1,6 +1,6 @@
 import ast
 from langchain_core.prompts import PromptTemplate
-from lester.rewrite.prompts import DATAPREP_COT, DATAPREP_FIX
+from lester.rewrite.prompts import DATAPREP_COT, FIX, FEATURISATION_COT
 
 
 def extract_code(response):
@@ -14,7 +14,7 @@ def extract_code(response):
         print(f"SYNTACTICALLY INCORRECT CODE GENERATED:\n\n{e}\\n\n{generated_code}")
 
 
-def generate_code(task, model):
+def generate_dataprep_code(task, model):
     if len(task.input_schemas()) == 1:
         hint = f"The schema of the input data for the code is: {','.join(task.input_schemas()[0])}."
     else:
@@ -37,6 +37,20 @@ def generate_code(task, model):
     return generated_code
 
 
+def generate_featurisation_code(task, model):
+    params = {
+        'columns': ', '.join(task.input_schema),
+        'code': task.original_code
+    }
+
+    prompt_template = PromptTemplate.from_template(FEATURISATION_COT)
+    prompt = prompt_template.invoke(params)
+    response = model.invoke(prompt)
+    generated_code = extract_code(response)
+
+    return generated_code
+
+
 def try_to_run(model, task, generated_code, previous_error=None, attempts=0):
 
     if attempts > 1:
@@ -49,7 +63,7 @@ def try_to_run(model, task, generated_code, previous_error=None, attempts=0):
                 'generated_code': generated_code,
                 'error_message': previous_error,
             }
-            prompt_template = PromptTemplate.from_template(DATAPREP_FIX)
+            prompt_template = PromptTemplate.from_template(FIX)
             prompt = prompt_template.invoke(params)
             response = model.invoke(prompt)
             generated_code = extract_code(response)

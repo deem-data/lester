@@ -16,9 +16,6 @@ def messy_pipeline(customers_path, mails_path):
 
     sentiment_predictor = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english')
 
-    def matches_usecase(text):
-        return "complaint" in text or "bank account" in text
-
     def sanitize(text):
         return text.lower()
 
@@ -36,7 +33,7 @@ def messy_pipeline(customers_path, mails_path):
                 parts = line.strip().split(",")
                 mail_id, email, raw_date, mail_subject, mail_text = parts
                 mail_date = parser.parse(raw_date)
-                if mail_date.year >= 2022 and matches_usecase(mail_text):
+                if mail_date.year >= 2022:
                     if email in customer_data:
                         bank, country, is_premium = customer_data[email]
                         title = sanitize(mail_subject)
