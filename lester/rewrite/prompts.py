@@ -61,3 +61,18 @@ Here is the code to rewrite:
 
 {code}
 """
+
+MODEL_COT = """
+The following code defines a machine learning model from a common library in Python. 
+Your task is to rewrite the code to use the pytorch API without changing the code semantics.
+
+Proceed in the following way:
+1. Rewrite the python code such that all the code is contained in a single function with the name and signature ``__model(num_features)``. This function returns a tuple (model, loss) containing a pytorch model and an appropriate loss function from pytorch. The parameter ``num_features`` denotes the number of input features for the model.
+2. Rewrite the python code such that global variables and imports are moved into the `__model`` function. Make sure that no imports from the original code are missing!
+
+ONLY RESPOND WITH PYTHON CODE. DO NOT CHANGE THE SEMANTICS OF THE CODE.
+
+Here is the code to rewrite:
+
+{code}
+"""

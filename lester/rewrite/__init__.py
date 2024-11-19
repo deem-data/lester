@@ -1,6 +1,6 @@
 import ast
 from langchain_core.prompts import PromptTemplate
-from lester.rewrite.prompts import DATAPREP_COT, FIX, FEATURISATION_COT
+from lester.rewrite.prompts import DATAPREP_COT, FIX, FEATURISATION_COT, MODEL_COT
 
 
 def extract_code(response):
@@ -44,6 +44,19 @@ def generate_featurisation_code(task, model):
     }
 
     prompt_template = PromptTemplate.from_template(FEATURISATION_COT)
+    prompt = prompt_template.invoke(params)
+    response = model.invoke(prompt)
+    generated_code = extract_code(response)
+
+    return generated_code
+
+
+def generate_model_code(task, model):
+    params = {
+        'code': task.original_code
+    }
+
+    prompt_template = PromptTemplate.from_template(MODEL_COT)
     prompt = prompt_template.invoke(params)
     response = model.invoke(prompt)
     generated_code = extract_code(response)

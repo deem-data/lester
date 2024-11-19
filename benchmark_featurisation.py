@@ -124,8 +124,8 @@ def __featurise():
 """
 
 print('CreditcardFeaturisation...')
-#creditcard_task = CreditcardFeaturisationTask()
-#creditcard_task.evaluate_transformed_code(CREDITCARD_FEATURISATION_CODE)
+creditcard_task = CreditcardFeaturisationTask()
+creditcard_task.evaluate_transformed_code(CREDITCARD_FEATURISATION_CODE)
 
 print('LdbFeaturisation...')
 ldb_task = LdbFeaturisationTask()
